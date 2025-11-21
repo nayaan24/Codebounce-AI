@@ -2,11 +2,9 @@
   <img src="icon.png" alt="description" width="75">
 </p>
 
-# Adorable
+# Codebounce AI
 
-Open-source version of **Lovable** - an AI agent that can make websites and apps through a chat interface.
-
-For guidance on building app builders with AI, see the [Freestyle guide on Building an App Builder](https://docs.freestyle.sh/guides/app-builder).
+This is Codebounce AI - an AI agent that can make websites and apps through a chat interface.
 
 ## Features
 
@@ -108,7 +106,7 @@ PREVIEW_DOMAIN=<your-domain> # formatted like adorable.app
 Get a Morph API key from [morphllm.com](https://morphllm.com) and add it to your `.env` file to enable the fast edit tool:
 
 ```env
-MORPH_API_KEY=<your-morph-api-key>
+
 ```
 
 This automatically enables the Morph fast edit tool which provides faster code modifications.

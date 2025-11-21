@@ -1,0 +1,12 @@
+[1mdiff --git a/package.json b/package.json[m
+[1mindex 668f686..ae31115 100644[m
+[1m--- a/package.json[m
+[1m+++ b/package.json[m
+[36m@@ -10,6 +10,7 @@[m
+   },[m
+   "dependencies": {[m
+     "@ai-sdk/anthropic": "^2.0.0-beta.8",[m
+[32m+[m[32m    "@ai-sdk/openai": "^2.0.69",[m
+     "@ai-sdk/react": "^2.0.0-beta.25",[m
+     "@ai-sdk/ui-utils": "^2.0.0-canary.3",[m
+     "@anthropic-ai/sdk": "^0.40.1",[m

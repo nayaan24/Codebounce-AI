@@ -4,27 +4,62 @@ import { cn } from "@/lib/utils";
 import { UIMessage } from "ai";
 import { CodeBlock, CodeBlockCode } from "./ui/code-block";
 
+type ToolContent = {
+  type: "text";
+  text: string;
+};
+
+type ToolInvocationPart = Extract<
+  UIMessage["parts"][number],
+  { type: `tool-${string}` }
+>;
+
+type ToolInvocation = (ToolInvocationPart extends never
+  ? {
+      type: `tool-${string}`;
+      state?: "input-streaming" | "input-available" | "output-available";
+    }
+  : ToolInvocationPart) & {
+  input?: Record<string, unknown>;
+  output?: {
+    isError?: boolean;
+    content?: ToolContent[];
+  };
+  result?: {
+    isError?: boolean;
+    content?: ToolContent[];
+  };
+};
+
+function getToolInput<T extends Record<string, unknown>>(
+  toolInvocation: ToolInvocation
+): T {
+  return ((toolInvocation.input as T | undefined) ?? ({} as T)) as T;
+}
+
 export function ToolMessage({
   toolInvocation,
 }: {
-  toolInvocation: UIMessage["parts"][number];
+  toolInvocation: ToolInvocation;
   className?: string;
 }) {
   if (toolInvocation.type === "tool-list_directory") {
+    const input = getToolInput<{ path?: string }>(toolInvocation);
     return (
       <ToolBlock
         name="listing directory"
-        argsText={toolInvocation.input?.path?.split("/").slice(2).join("/")}
+        argsText={input.path?.split("/").slice(2).join("/")}
         toolInvocation={toolInvocation}
       />
     );
   }
 
   if (toolInvocation.type === "tool-read_file") {
+    const input = getToolInput<{ path?: string }>(toolInvocation);
     return (
       <ToolBlock
         name="read file"
-        argsText={toolInvocation.input?.path?.split("/").slice(2).join("/")}
+        argsText={input.path?.split("/").slice(2).join("/")}
         toolInvocation={toolInvocation}
       />
     );
@@ -39,34 +74,37 @@ export function ToolMessage({
   }
 
   if (toolInvocation.type === "tool-exec") {
+    const input = getToolInput<{ command?: string }>(toolInvocation);
     return (
       <ToolBlock
         name="exec"
         toolInvocation={toolInvocation}
-        argsText={toolInvocation.input?.command}
+        argsText={input.command}
       />
     );
   }
 
   if (toolInvocation.type === "tool-create_directory") {
+    const input = getToolInput<{ path?: string }>(toolInvocation);
     return (
       <ToolBlock
         name="create directory"
         toolInvocation={toolInvocation}
-        argsText={toolInvocation.input?.path?.split("/").slice(2).join("/")}
+        argsText={input.path?.split("/").slice(2).join("/")}
       />
     );
   }
 
   if (toolInvocation.type === "tool-update_todo_list") {
+    const todoItems =
+      getToolInput<{
+        items?: { description: string; completed: boolean }[];
+      }>(toolInvocation).items ?? [];
+
     return (
       <ToolBlock name="update todo list" toolInvocation={toolInvocation}>
         <div className="grid gap-2">
-          {toolInvocation.input?.items?.map?.(
-            (
-              item: { description: string; completed: boolean },
-              index: number
-            ) => (
+          {todoItems.map((item, index) => (
               <div key={index} className="flex items-center gap-3 px-4 py-1">
                 {/* Minimal sleek checkbox */}
                 <div className="relative flex-shrink-0 pointer-events-none">
@@ -102,8 +140,8 @@ export function ToolMessage({
                   {item.description}
                 </span>
               </div>
-            )
-          )}
+            ))
+          }
         </div>
       </ToolBlock>
     );
@@ -147,18 +185,23 @@ function DefaultContentRenderer(props: {
 function EditFileTool({
   toolInvocation,
 }: {
-  toolInvocation: UIMessage["parts"][number] & {
+  toolInvocation: ToolInvocation & {
     type: "tool-edit_file";
   };
 }) {
+  const input = getToolInput<{
+    path?: string;
+    edits?: { newText: string; oldText: string }[];
+  }>(toolInvocation);
+
   return (
     <ToolBlock
       name="edit file"
-      argsText={toolInvocation.input?.path?.split("/").slice(2).join("/")}
+      argsText={input.path?.split("/").slice(2).join("/")}
       toolInvocation={toolInvocation}
     >
       <div className="grid gap-2">
-        {toolInvocation.input?.edits?.map?.(
+        {input.edits?.map?.(
           (edit: { newText: string; oldText: string }, index: number) =>
             (edit.oldText || edit.newText) && (
               <CodeBlock key={index} className="overflow-scroll py-2">
@@ -212,31 +255,32 @@ function EditFileTool({
 function WriteFileTool({
   toolInvocation,
 }: {
-  toolInvocation: UIMessage["parts"][number] & {
+  toolInvocation: ToolInvocation & {
     type: "tool-write_file";
   };
 }) {
+  const input = getToolInput<{ path?: string; content?: string }>(
+    toolInvocation
+  );
+
   return (
     <ToolBlock
       name="write file"
-      argsText={toolInvocation.input?.path?.split("/").slice(2).join("/")}
+      argsText={input.path?.split("/").slice(2).join("/")}
       toolInvocation={toolInvocation}
     >
-      {toolInvocation.input?.content && (
+      {input.content && (
         <CodeBlock className="overflow-scroll sticky bottom-0">
           <CodeBlockCode
             code={
-              toolInvocation.input?.content
-                ?.split("\n")
-                .slice(0, 5)
-                .join("\n") ?? ""
+              input.content?.split("\n").slice(0, 5).join("\n") ?? ""
             }
             language={"tsx"}
             className="col-start-1 col-end-1 row-start-1 row-end-1 overflow-visible [&_code]:bg-green-200! bg-green-200"
           />
-          {toolInvocation.input?.content?.split("\n").length > 5 && (
+          {input.content?.split("\n").length > 5 && (
             <div className="text-green-700 px-4 text-xs pb-2 font-mono">
-              +{toolInvocation.input?.content?.split("\n").length - 5} more
+              +{input.content?.split("\n").length - 5} more
             </div>
           )}
         </CodeBlock>
@@ -246,9 +290,7 @@ function WriteFileTool({
 }
 
 function ToolBlock(props: {
-  toolInvocation?: UIMessage["parts"][number] & {
-    type: "tool-";
-  };
+  toolInvocation?: ToolInvocation;
   name: string;
   argsText?: string;
   children?: React.ReactNode;

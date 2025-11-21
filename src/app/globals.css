@@ -277,6 +277,65 @@ body {
   height: 100dvh; /* Dynamic viewport height for mobile */
 }
 
+.font-pixelated {
+  font-family: var(--font-pixelated), monospace;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Logo Shadows */
+.logo-shadow {
+  text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.3),
+               0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+.logo-shadow-main {
+  text-shadow: 3px 3px 6px rgba(255, 255, 255, 0.4),
+               0 0 12px rgba(255, 255, 255, 0.3),
+               0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+/* Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.8s ease-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Input Container Effects */
+.input-container {
+  transition: all 0.3s ease;
+}
+
+.input-container:focus-within {
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1),
+              0 0 20px rgba(255, 255, 255, 0.05);
+}
+
 /* Safe area insets for mobile Safari */
 @supports (height: 100dvh) {
   body {
@@ -306,4 +365,47 @@ body {
 .dot-pattern {
   background-image: radial-gradient(circle, #000 1px, transparent 1px);
   background-size: 30px 30px;
+}
+
+@keyframes peek-bracket-left {
+  0%,
+  65% {
+    transform: translate(-160%, -50%);
+    opacity: 0;
+  }
+  25%,
+  35% {
+    transform: translate(-20%, -50%);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-160%, -50%);
+    opacity: 0;
+  }
+}
+
+@keyframes peek-bracket-right {
+  0%,
+  65% {
+    transform: translate(160%, -50%);
+    opacity: 0;
+  }
+  25%,
+  35% {
+    transform: translate(20%, -50%);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(160%, -50%);
+    opacity: 0;
+  }
+}
+
+.peek-bracket-left {
+  animation: peek-bracket-left 1.8s ease-in-out infinite;
+}
+
+.peek-bracket-right {
+  animation: peek-bracket-right 1.8s ease-in-out infinite;
+  animation-delay: 0.3s;
 }

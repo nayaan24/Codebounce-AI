@@ -15,6 +15,7 @@ export async function getUserApps() {
       description: appsTable.description,
       gitRepo: appsTable.gitRepo,
       createdAt: appsTable.createdAt,
+      previewDomain: appsTable.previewDomain,
       permissions: appUsers.permissions,
     })
     .from(appUsers)

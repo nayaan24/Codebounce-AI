@@ -1,17 +1,18 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { UserButton, useUser } from "@stackframe/stack";
+import { Paperclip, Hand } from "lucide-react";
+
+import LogoMark from "@/logo.svg";
 import { PromptInput, PromptInputActions } from "@/components/ui/prompt-input";
 import { FrameworkSelector } from "@/components/framework-selector";
-import Image from "next/image";
-import LogoSvg from "@/logo.svg";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ExampleButton } from "@/components/ExampleButton";
-import { UserButton } from "@stackframe/stack";
-import { UserApps } from "@/components/user-apps";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PromptInputTextareaWithTypingAnimation } from "@/components/prompt-input";
+import { UserApps } from "@/components/user-apps";
 
 const queryClient = new QueryClient();
 
@@ -19,11 +20,13 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [framework, setFramework] = useState("nextjs");
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"projects" | "community">("projects");
   const router = useRouter();
+  const user = useUser();
 
   const handleSubmit = async () => {
+    if (!prompt.trim()) return;
     setIsLoading(true);
-
     router.push(
       `/app/new?message=${encodeURIComponent(prompt)}&template=${framework}`
     );
@@ -31,117 +34,128 @@ export default function Home() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <main className="min-h-screen p-4 relative">
-        <div className="flex w-full justify-between items-center">
-          <h1 className="text-lg font-bold flex-1 sm:w-80">
-            <a href="https://www.freestyle.sh">freestyle.sh</a>
-          </h1>
-          <Image
-            className="dark:invert mx-2"
-            src={LogoSvg}
-            alt="Adorable Logo"
-            width={36}
-            height={36}
-          />
-          <div className="flex items-center gap-2 flex-1 sm:w-80 justify-end">
-            <UserButton />
-          </div>
-        </div>
-
-        <div>
-          <div className="w-full max-w-lg px-4 sm:px-0 mx-auto flex flex-col items-center mt-16 sm:mt-24 md:mt-32 col-start-1 col-end-1 row-start-1 row-end-1 z-10">
-            <p className="text-neutral-600 text-center mb-6 text-3xl sm:text-4xl md:text-5xl font-bold">
-              Let AI Cook
-            </p>
-
-            <div className="w-full relative my-5">
-              <div className="relative w-full max-w-full overflow-hidden">
-                <div className="w-full bg-accent rounded-md relative z-10 border transition-colors">
-                  <PromptInput
-                    leftSlot={
-                      <FrameworkSelector
-                        value={framework}
-                        onChange={setFramework}
-                      />
-                    }
-                    isLoading={isLoading}
-                    value={prompt}
-                    onValueChange={setPrompt}
-                    onSubmit={handleSubmit}
-                    className="relative z-10 border-none bg-transparent shadow-none focus-within:border-gray-400 focus-within:ring-1 focus-within:ring-gray-200 transition-all duration-200 ease-in-out "
+      <main className="min-h-screen bg-black text-white">
+        {/* Header */}
+        <header className="border-b border-gray-600/30 px-6 py-4">
+          <div className="mx-auto flex max-w-7xl items-center justify-between">
+            <h1 className="font-pixelated text-xl text-white logo-shadow">code bounce</h1>
+            <div className="flex items-center gap-3">
+              {user ? (
+                <UserButton />
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    className="rounded-lg border-gray-500/50 bg-white px-6 py-2 text-sm font-normal text-black transition-all duration-200 hover:bg-gray-100 hover:scale-105"
+                    onClick={() => router.push("/handler/login")}
                   >
-                    <PromptInputTextareaWithTypingAnimation />
-                    <PromptInputActions>
-                      <Button
-                        variant={"ghost"}
-                        size="sm"
-                        onClick={handleSubmit}
-                        disabled={isLoading || !prompt.trim()}
-                        className="h-7 text-xs"
-                      >
-                        <span className="hidden sm:inline">
-                          Start Creating ⏎
-                        </span>
-                        <span className="sm:hidden">Create ⏎</span>
-                      </Button>
-                    </PromptInputActions>
-                  </PromptInput>
-                </div>
+                    Log In
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="rounded-lg border-gray-500/50 bg-gray-400/20 px-6 py-2 text-sm font-normal text-white transition-all duration-200 hover:bg-gray-400/30 hover:scale-105"
+                    onClick={() => router.push("/handler/signup")}
+                  >
+                    Get Started
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <div className="mx-auto flex min-h-[calc(100vh-80px)] max-w-5xl flex-col px-6 py-12">
+          {/* Large Title */}
+          <div className="mb-12 text-center">
+            <h2 className="font-pixelated text-5xl text-white sm:text-6xl md:text-7xl logo-shadow-main animate-fade-in">
+              code bounce
+            </h2>
+          </div>
+
+          {/* Input Field */}
+          <div className="mb-8">
+            <div className="relative flex items-center gap-4 rounded-lg border border-gray-500/50 bg-transparent p-4 input-container transition-all duration-300">
+              {/* Cursor Icon */}
+              <div className="flex-shrink-0 animate-float">
+                <Hand className="h-6 w-6 text-white" />
+              </div>
+
+              {/* Input */}
+              <div className="flex-1">
+                <PromptInput
+                  isLoading={isLoading}
+                  value={prompt}
+                  onValueChange={setPrompt}
+                  onSubmit={handleSubmit}
+                  className="border-none bg-transparent p-0"
+                >
+                  <PromptInputTextareaWithTypingAnimation />
+                </PromptInput>
+              </div>
+
+              {/* Circular Buttons */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-500/50 bg-gray-400/20 text-white transition-all duration-200 hover:bg-gray-400/30 hover:scale-110"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isLoading || !prompt.trim()}
+                  className="rounded-full border border-gray-500/50 bg-gray-400/20 px-4 py-2 text-xs font-normal text-white transition-all duration-200 hover:bg-gray-400/30 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  GO
+                </button>
               </div>
             </div>
-            <Examples setPrompt={setPrompt} />
-            <div className="mt-8 mb-16">
-              <a
-                href="https://freestyle.sh"
-                className="border rounded-md px-4 py-2 mt-4 text-sm font-semibold transition-colors duration-200 ease-in-out cursor-pointer w-full max-w-72 text-center block"
+          </div>
+
+          {/* Bottom Section */}
+          <div className="mt-auto rounded-lg border border-gray-500/50 bg-transparent p-6">
+            {/* Tabs */}
+            <div className="mb-6 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setActiveTab("projects")}
+                className={`rounded-full px-6 py-2 text-sm font-normal transition-colors ${
+                  activeTab === "projects"
+                    ? "bg-gray-400/20 text-white"
+                    : "bg-gray-400/10 text-white/60 hover:bg-gray-400/15"
+                }`}
               >
-                <span className="block font-bold">
-                  By <span className="underline">freestyle.sh</span>
-                </span>
-                <span className="text-xs">
-                  JavaScript infrastructure for AI.
-                </span>
-              </a>
+                Your Projects
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("community")}
+                className={`rounded-full px-6 py-2 text-sm font-normal transition-colors ${
+                  activeTab === "community"
+                    ? "bg-gray-400/20 text-white"
+                    : "bg-gray-400/10 text-white/60 hover:bg-gray-400/15"
+                }`}
+              >
+                community
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="min-h-[200px]">
+              {activeTab === "projects" ? (
+                <UserApps />
+              ) : (
+                <div className="flex items-center justify-center py-12 text-white/40">
+                  <p className="text-sm">Community projects coming soon...</p>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-        <div className="border-t py-8 mx-0 sm:-mx-4">
-          <UserApps />
         </div>
       </main>
     </QueryClientProvider>
   );
 }
 
-function Examples({ setPrompt }: { setPrompt: (text: string) => void }) {
-  return (
-    <div className="mt-2">
-      <div className="flex flex-wrap justify-center gap-2 px-2">
-        <ExampleButton
-          text="Dog Food Marketplace"
-          promptText="Build a dog food marketplace where users can browse and purchase premium dog food."
-          onClick={(text) => {
-            console.log("Example clicked:", text);
-            setPrompt(text);
-          }}
-        />
-        <ExampleButton
-          text="Personal Website"
-          promptText="Create a personal website with portfolio, blog, and contact sections."
-          onClick={(text) => {
-            console.log("Example clicked:", text);
-            setPrompt(text);
-          }}
-        />
-        <ExampleButton
-          text="Burrito B2B SaaS"
-          promptText="Build a B2B SaaS for burrito shops to manage inventory, orders, and delivery logistics."
-          onClick={(text) => {
-            console.log("Example clicked:", text);
-            setPrompt(text);
-          }}
-        />
-      </div>
-    </div>
-  );
-}

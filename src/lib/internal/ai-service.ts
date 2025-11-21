@@ -66,6 +66,8 @@ export class AIService {
     message: UIMessage,
     options?: Partial<AIStreamOptions>
   ): Promise<AIResponse> {
+    console.log(`[AIService] Connecting to MCP server at: ${mcpUrl}`);
+    
     const mcp = new MCPClient({
       id: crypto.randomUUID(),
       servers: {
@@ -75,7 +77,45 @@ export class AIService {
       },
     });
 
-    const freestyleToolsets = await mcp.getToolsets();
+    // Retry logic for MCP connection (dev server might still be provisioning)
+    let freestyleToolsets;
+    const maxRetries = 5;
+    const baseDelay = 2000; // 2 seconds
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[AIService] Attempting to connect to MCP server (attempt ${attempt}/${maxRetries})...`);
+        freestyleToolsets = await mcp.getToolsets();
+        console.log(`[AIService] Successfully connected to MCP server`);
+        break;
+      } catch (error) {
+        const isLastAttempt = attempt === maxRetries;
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        
+        console.warn(
+          `[AIService] MCP connection attempt ${attempt} failed: ${errorMessage}`
+        );
+        
+        if (isLastAttempt) {
+          console.error(`[AIService] Failed to connect to MCP server after ${maxRetries} attempts`);
+          throw new Error(
+            `Failed to connect to Freestyle dev server after ${maxRetries} attempts. ` +
+            `The dev server may still be provisioning or there may be an issue with your Freestyle API key/credits. ` +
+            `URL: ${mcpUrl}. Original error: ${errorMessage}`
+          );
+        }
+        
+        // Exponential backoff: 2s, 4s, 8s, 16s, 32s
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        console.log(`[AIService] Waiting ${delay}ms before retry...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    // TypeScript safety check (should never happen due to retry logic above)
+    if (!freestyleToolsets) {
+      throw new Error("Failed to get Freestyle toolsets - this should not happen");
+    }
 
     // Save message to memory
     const memory = await agent.getMemory();

@@ -1,7 +1,12 @@
 {
-  "short_name": "Adorable",
-  "name": "Adorable",
+  "short_name": "Codebounce",
+  "name": "Codebounce AI",
   "icons": [
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
     {
       "src": "/android-chrome-192x192.png",
       "type": "image/png",
@@ -30,11 +35,11 @@
   ],
   "id": "/?source=pwa",
   "start_url": "/?source=pwa",
-  "background_color": "#ffffff",
+  "background_color": "#000000",
   "display": "standalone",
   "scope": "/",
-  "theme_color": "#ffffff",
+  "theme_color": "#000000",
   "shortcuts": [],
-  "description": "Adorable is an open source AI app builder.",
+  "description": "Codebounce AI - Build apps with AI",
   "screenshots": []
 }

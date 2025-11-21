@@ -24,8 +24,8 @@ export function PromptInputTextareaWithTypingAnimation() {
   return (
     <PromptInputTextarea
       ref={placeholderRef}
-      placeholder={displayText}
-      className="min-h-[100px] w-full bg-transparent dark:bg-transparent backdrop-blur-sm pr-12"
+      placeholder={displayText || "MAKE A WONDERFUL APP |"}
+      className="min-h-[60px] w-full bg-transparent pr-12 text-white placeholder:text-white/60 text-base"
       onBlur={() => {}}
     />
   );
