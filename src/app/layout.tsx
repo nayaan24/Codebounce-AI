@@ -6,6 +6,7 @@ import { stackServerApp } from "@/auth/stack-auth";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
+import { ProjectOpeningProvider } from "@/contexts/project-opening-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,15 +66,18 @@ export default function RootLayout({
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
+          defaultTheme="system"
+          enableSystem={true}
           disableTransitionOnChange
-          forcedTheme="light"
         >
           <Toaster />
 
           <StackProvider app={stackServerApp}>
-            <StackTheme>{children}</StackTheme>
+            <StackTheme>
+              <ProjectOpeningProvider>
+                {children}
+              </ProjectOpeningProvider>
+            </StackTheme>
           </StackProvider>
         </ThemeProvider>
       </body>

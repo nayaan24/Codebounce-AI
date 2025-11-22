@@ -54,6 +54,7 @@ type PromptInputProps = {
   children: React.ReactNode;
   className?: string;
   leftSlot?: React.ReactNode;
+  disabled?: boolean;
 };
 
 function PromptInput({
@@ -65,6 +66,7 @@ function PromptInput({
   onSubmit,
   children,
   leftSlot,
+  disabled = false,
 }: PromptInputProps) {
   const [internalValue, setInternalValue] = useState(value || "");
 
@@ -82,7 +84,7 @@ function PromptInput({
           setValue: onValueChange || handleChange,
           maxHeight,
           onSubmit,
-          disabled: false,
+          disabled,
           leftSlot,
         }}
       >
@@ -128,6 +130,10 @@ function PromptInputTextarea({
   }, [value, maxHeight, disableAutosize]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (disabled) {
+      e.preventDefault();
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSubmit?.();
@@ -135,11 +141,16 @@ function PromptInputTextarea({
     onKeyDown?.(e);
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (disabled) return;
+    setValue(e.target.value);
+  };
+
   return (
     <Textarea
       ref={textareaRef}
       value={value}
-      onChange={(e) => setValue(e.target.value)}
+      onChange={handleChange}
       onKeyDown={handleKeyDown}
       onFocus={props.onFocus}
       onBlur={props.onBlur}

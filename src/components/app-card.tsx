@@ -8,10 +8,11 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { Trash, ExternalLink, MoreVertical, Loader2 } from "lucide-react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { deleteApp } from "@/actions/delete-app";
 import { toast } from "sonner";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
+import { useProjectOpening } from "@/contexts/project-opening-context";
 
 type AppCardProps = {
   id: string;
@@ -23,43 +24,22 @@ type AppCardProps = {
 
 export function AppCard({ id, name, createdAt, previewDomain, onDelete }: AppCardProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const [previewError, setPreviewError] = useState(false);
-  const [isOpening, setIsOpening] = useState(false);
-  const navigationStarted = useRef(false);
+  const { setProjectOpening, isAnyProjectOpening, openingProjectId } = useProjectOpening();
 
-  // Reset opening state only when we're actually on the target page (not homepage)
-  useEffect(() => {
-    if (pathname === `/app/${id}` && navigationStarted.current) {
-      // Delay to ensure page has started loading
-      const timeout = setTimeout(() => {
-        setIsOpening(false);
-        navigationStarted.current = false;
-      }, 500);
-      return () => clearTimeout(timeout);
-    }
-    // Don't reset if we're still on homepage - keep loading state
-  }, [pathname, id]);
-
-  // Fallback: Reset opening state after 15 seconds to prevent stuck state
-  useEffect(() => {
-    if (isOpening) {
-      const timeout = setTimeout(() => {
-        setIsOpening(false);
-        navigationStarted.current = false;
-      }, 15000); // 15 second timeout
-      return () => clearTimeout(timeout);
-    }
-  }, [isOpening]);
+  const isThisCardOpening = openingProjectId === id;
 
   const handleOpen = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    if (isOpening || navigationStarted.current) return; // Prevent multiple clicks
+    // Prevent if any project is opening
+    if (isAnyProjectOpening) return;
     
-    setIsOpening(true);
-    navigationStarted.current = true;
+    // Set loading state with project ID
+    setProjectOpening(id);
+    
+    // Navigate
     router.push(`/app/${id}`);
   };
 
@@ -67,10 +47,13 @@ export function AppCard({ id, name, createdAt, previewDomain, onDelete }: AppCar
     e.preventDefault();
     e.stopPropagation();
     
-    if (isOpening || navigationStarted.current) return;
+    // Prevent if any project is opening
+    if (isAnyProjectOpening) return;
     
-    setIsOpening(true);
-    navigationStarted.current = true;
+    // Set loading state with project ID
+    setProjectOpening(id);
+    
+    // Navigate
     router.push(`/app/${id}`);
   };
 
@@ -78,7 +61,7 @@ export function AppCard({ id, name, createdAt, previewDomain, onDelete }: AppCar
     e.preventDefault();
     e.stopPropagation();
     
-    if (isOpening) return; // Prevent delete while opening
+    if (isAnyProjectOpening) return;
     
     await deleteApp(id);
     toast.success("App deleted successfully");
@@ -102,19 +85,21 @@ export function AppCard({ id, name, createdAt, previewDomain, onDelete }: AppCar
     });
   };
 
+  const isDisabled = isAnyProjectOpening;
+
   return (
     <div className="relative group">
       <div
         onClick={handleCardClick}
         className={`bg-black rounded-lg border border-gray-500/30 overflow-hidden transition-all duration-200 ${
-          isOpening || navigationStarted.current
+          isDisabled
             ? "opacity-60 cursor-wait border-gray-600/50 pointer-events-none" 
             : "hover:border-gray-400/50 cursor-pointer"
         }`}
       >
           {/* Preview Section */}
           <div className="h-40 bg-gray-800/50 relative overflow-hidden">
-            {isOpening || navigationStarted.current ? (
+            {isThisCardOpening ? (
               <div className="w-full h-full flex flex-col items-center justify-center text-white px-4 text-center">
                 <Loader2 className="h-6 w-6 animate-spin mb-2" />
                 <div className="text-sm font-semibold">Opening...</div>
@@ -150,7 +135,7 @@ export function AppCard({ id, name, createdAt, previewDomain, onDelete }: AppCar
         </div>
 
       {/* Dropdown Menu */}
-      {!isOpening && !navigationStarted.current && (
+      {!isDisabled && (
         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

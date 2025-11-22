@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "./ui/dialog";
+import { ModeToggle } from "./theme-provider";
 
 export function TopBar({
   appName,
@@ -37,7 +38,9 @@ export function TopBar({
         <HomeIcon className="h-5 w-5" />
       </Link>
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      <div className="flex items-center gap-2">
+        <ModeToggle />
+        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogTrigger asChild>
           <Button size="sm" variant={"ghost"}>
             <img
@@ -142,6 +145,7 @@ export function TopBar({
           </div>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

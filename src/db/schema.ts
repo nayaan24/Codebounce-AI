@@ -5,6 +5,7 @@ import {
   uuid,
   json,
   pgEnum,
+  index,
 } from "drizzle-orm/pg-core";
 import { drizzle } from "drizzle-orm/node-postgres";
 
@@ -38,7 +39,10 @@ export const appUsers = pgTable("app_users", {
   freestyleIdentity: text("freestyle_identity").notNull(),
   freestyleAccessToken: text("freestyle_access_token").notNull(),
   freestyleAccessTokenId: text("freestyle_access_token_id").notNull(),
-});
+}, (table) => ({
+  userIdIdx: index("app_users_user_id_idx").on(table.userId),
+  appIdIdx: index("app_users_app_id_idx").on(table.appId),
+}));
 
 export const messagesTable = pgTable("messages", {
   id: text("id").primaryKey(),
@@ -47,7 +51,10 @@ export const messagesTable = pgTable("messages", {
     .notNull()
     .references(() => appsTable.id),
   message: json("message").notNull().$type<UIMessage>(),
-});
+}, (table) => ({
+  appIdIdx: index("messages_app_id_idx").on(table.appId),
+  createdAtIdx: index("messages_created_at_idx").on(table.createdAt),
+}));
 
 export const appDeployments = pgTable("app_deployments", {
   appId: uuid("app_id")
@@ -56,4 +63,6 @@ export const appDeployments = pgTable("app_deployments", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   deploymentId: text("deployment_id").notNull(),
   commit: text("commit").notNull(), // sha of the commit
-});
+}, (table) => ({
+  appIdIdx: index("app_deployments_app_id_idx").on(table.appId),
+}));

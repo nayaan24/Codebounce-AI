@@ -110,9 +110,14 @@ export default function Chat(props: {
         style={{ overflowAnchor: "auto" }}
       >
         <ChatContainer autoScroll>
-          {messages.map((message: any) => (
-            <MessageBody key={message.id} message={message} />
-          ))}
+          {messages
+            .filter((message: any, index: number, self: any[]) => 
+              // Remove duplicates by checking if this is the first occurrence of this ID
+              self.findIndex((m: any) => m.id === message.id) === index
+            )
+            .map((message: any, index: number) => (
+              <MessageBody key={`${message.id}-${index}`} message={message} />
+            ))}
         </ChatContainer>
       </div>
       <div className="flex-shrink-0 p-3 transition-all bg-background md:backdrop-blur-sm">

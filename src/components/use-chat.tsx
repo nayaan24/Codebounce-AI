@@ -1,5 +1,5 @@
 import { useChat } from "@ai-sdk/react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 // For some reason, if the chat is resumed during a router page navigation, it
 // will try to resume the stream multiple times and result in some sort of leak
@@ -26,6 +26,18 @@ export function useChatSafe(
 
   const chat = useChat(options);
 
+  // Deduplicate messages by ID to prevent duplicate key errors
+  const deduplicatedMessages = useMemo(() => {
+    const seen = new Set<string>();
+    return chat.messages.filter((message: any) => {
+      if (seen.has(message.id)) {
+        return false;
+      }
+      seen.add(message.id);
+      return true;
+    });
+  }, [chat.messages]);
+
   useEffect(() => {
     if (!runningChats.has(id) && resume) {
       chat.resumeStream();
@@ -39,7 +51,10 @@ export function useChatSafe(
         });
       }
     };
-  }, [resume, id]);
+  }, [resume, id, chat]);
 
-  return chat;
+  return {
+    ...chat,
+    messages: deduplicatedMessages,
+  };
 }

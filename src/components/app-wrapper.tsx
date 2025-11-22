@@ -7,6 +7,7 @@ import { MessageCircle, Monitor } from "lucide-react";
 import WebView from "./webview";
 import { UIMessage } from "ai";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useProjectOpening } from "@/contexts/project-opening-context";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,19 @@ export default function AppWrapper({
     "chat"
   );
   const [isMobile, setIsMobile] = useState(false);
+  const { setProjectOpening, openingProjectId } = useProjectOpening();
+
+  // Reset project opening state when app page loads and is ready
+  useEffect(() => {
+    // Only reset if this is the project that was opening
+    if (openingProjectId === appId) {
+      // Delay reset to ensure page is fully loaded
+      const timeout = setTimeout(() => {
+        setProjectOpening(null);
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [appId, openingProjectId, setProjectOpening]);
 
   useEffect(() => {
     const checkMobile = () => {

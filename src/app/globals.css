@@ -409,3 +409,20 @@ body {
   animation: peek-bracket-right 1.8s ease-in-out infinite;
   animation-delay: 0.3s;
 }
+
+/* Stack Auth Form Customization */
+/* Add your custom styles here to override Stack Auth default styling */
+/* Inspect the auth pages in browser DevTools to find exact class names */
+
+/* Example: Customize Stack Auth forms */
+[data-stack-auth] {
+  /* Target the main Stack Auth container */
+}
+
+/* You can add more specific selectors after inspecting the page */
+/* Common patterns might be:
+   - Input fields
+   - Buttons
+   - Form containers
+   - Text elements
+*/

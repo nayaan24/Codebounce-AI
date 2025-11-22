@@ -13,6 +13,8 @@ import { FrameworkSelector } from "@/components/framework-selector";
 import { Button } from "@/components/ui/button";
 import { PromptInputTextareaWithTypingAnimation } from "@/components/prompt-input";
 import { UserApps } from "@/components/user-apps";
+import { useProjectOpening } from "@/contexts/project-opening-context";
+import { ModeToggle } from "@/components/theme-provider";
 
 const queryClient = new QueryClient();
 
@@ -23,9 +25,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<"projects" | "community">("projects");
   const router = useRouter();
   const user = useUser();
+  const { isAnyProjectOpening } = useProjectOpening();
 
   const handleSubmit = async () => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim() || isAnyProjectOpening) return;
     setIsLoading(true);
     router.push(
       `/app/new?message=${encodeURIComponent(prompt)}&template=${framework}`
@@ -36,10 +39,17 @@ export default function Home() {
     <QueryClientProvider client={queryClient}>
       <main className="min-h-screen bg-black text-white">
         {/* Header */}
-        <header className="border-b border-gray-600/30 px-6 py-4">
+        <header className="border-b border-gray-600/30 px-0 py-0">
           <div className="mx-auto flex max-w-7xl items-center justify-between">
-            <h1 className="font-pixelated text-xl text-white logo-shadow">code bounce</h1>
+            <Image 
+              src="/white_icon.png" 
+              alt="Logo" 
+              width={120} 
+              height={120}
+              className="object-contain"
+            />
             <div className="flex items-center gap-3">
+              <ModeToggle />
               {user ? (
                 <UserButton />
               ) : (
@@ -69,13 +79,17 @@ export default function Home() {
           {/* Large Title */}
           <div className="mb-12 text-center">
             <h2 className="font-pixelated text-5xl text-white sm:text-6xl md:text-7xl logo-shadow-main animate-fade-in">
-              code bounce
+              codebounce
             </h2>
           </div>
 
           {/* Input Field */}
           <div className="mb-8">
-            <div className="relative flex items-center gap-4 rounded-lg border border-gray-500/50 bg-transparent p-4 input-container transition-all duration-300">
+            <div className={`relative flex items-center gap-4 rounded-lg border bg-transparent p-4 input-container transition-all duration-300 ${
+              isAnyProjectOpening 
+                ? "border-gray-600/30 opacity-50 cursor-not-allowed" 
+                : "border-gray-500/50"
+            }`}>
               {/* Cursor Icon */}
               <div className="flex-shrink-0 animate-float">
                 <Hand className="h-6 w-6 text-white" />
@@ -89,6 +103,7 @@ export default function Home() {
                   onValueChange={setPrompt}
                   onSubmit={handleSubmit}
                   className="border-none bg-transparent p-0"
+                  disabled={isAnyProjectOpening}
                 >
                   <PromptInputTextareaWithTypingAnimation />
                 </PromptInput>
@@ -105,7 +120,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={isLoading || !prompt.trim()}
+                  disabled={isLoading || !prompt.trim() || isAnyProjectOpening}
                   className="rounded-full border border-gray-500/50 bg-gray-400/20 px-4 py-2 text-xs font-normal text-white transition-all duration-200 hover:bg-gray-400/30 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
                 >
                   GO
