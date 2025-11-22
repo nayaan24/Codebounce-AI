@@ -19,9 +19,14 @@ export function withErrorHandler<T extends NextRequest>(
       });
 
       // Return safe error response
-      const statusCode = error instanceof Error && "statusCode" in error 
-        ? (error as { statusCode: number }).statusCode 
-        : 500;
+      let statusCode = 500;
+      if (error instanceof Error && "statusCode" in error) {
+        const code = (error as { statusCode: number }).statusCode;
+        // Validate statusCode is a number within valid HTTP range (100-599)
+        if (typeof code === "number" && code >= 100 && code <= 599) {
+          statusCode = code;
+        }
+      }
 
       return NextResponse.json(
         {
@@ -40,9 +45,21 @@ export function withErrorHandler<T extends NextRequest>(
  * Validate request body size (simple protection)
  */
 export function validateRequestSize(req: NextRequest, maxSizeMB = 5): boolean {
+  // Validate maxSizeMB is positive
+  if (maxSizeMB <= 0) {
+    return false;
+  }
+
   const contentLength = req.headers.get("content-length");
   if (contentLength) {
-    const sizeMB = parseInt(contentLength, 10) / (1024 * 1024);
+    const sizeBytes = parseInt(contentLength, 10);
+    
+    // Check for NaN or negative values
+    if (isNaN(sizeBytes) || sizeBytes < 0) {
+      return false;
+    }
+    
+    const sizeMB = sizeBytes / (1024 * 1024);
     return sizeMB <= maxSizeMB;
   }
   return true; // If no content-length, allow (streaming requests)

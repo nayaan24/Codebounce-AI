@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { redis } from "@/lib/internal/redis";
 
 /**
@@ -14,37 +15,34 @@ export async function checkRateLimit(
   const windowMs = windowSeconds * 1000;
 
   try {
-    // Get current count
-    const count = await redis.get(key);
-    const currentCount = count ? parseInt(count, 10) : 0;
+    // Atomically increment and get the new count
+    const newCount = await redis.incr(key);
 
-    if (currentCount >= maxRequests) {
-      // Rate limited - get TTL to know when it resets
+    // Set expiration only on first request (when count was 0, now 1)
+    if (newCount === 1) {
+      await redis.expire(key, windowSeconds);
+    }
+
+    if (newCount > maxRequests) {
+      // Rate limited
       const ttl = await redis.ttl(key);
+      const resetAt = ttl > 0 ? now + (ttl * 1000) : now + windowMs;
       return {
         allowed: false,
         remaining: 0,
-        resetAt: now + (ttl * 1000),
+        resetAt,
       };
     }
 
-    // Increment counter
-    if (currentCount === 0) {
-      // First request in window - set with expiration
-      await redis.set(key, "1", { EX: windowSeconds });
-    } else {
-      // Increment existing
-      await redis.incr(key);
-    }
-
-    const newCount = currentCount + 1;
+    // Under limit
     const remaining = Math.max(0, maxRequests - newCount);
     const ttl = await redis.ttl(key);
+    const resetAt = ttl > 0 ? now + (ttl * 1000) : now + windowMs;
     
     return {
       allowed: true,
       remaining,
-      resetAt: now + (ttl * 1000),
+      resetAt,
     };
   } catch (error) {
     // If Redis fails, allow request (fail open for availability)
@@ -66,7 +64,7 @@ export function getRateLimitIdentifier(req: NextRequest, userId?: string): strin
   }
   // Fallback to IP address
   const forwarded = req.headers.get("x-forwarded-for");
-  const ip = forwarded ? forwarded.split(",")[0] : req.headers.get("x-real-ip") || "unknown";
+  const ip = forwarded?.split(",")[0]?.trim() || req.headers.get("x-real-ip")?.trim() || "unknown";
   return `ip:${ip}`;
 }
 

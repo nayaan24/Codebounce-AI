@@ -11,7 +11,14 @@ interface LogContext {
 
 function formatLog(level: LogLevel, message: string, context?: LogContext): string {
   const timestamp = new Date().toISOString();
-  const contextStr = context ? ` ${JSON.stringify(context)}` : "";
+  let contextStr = "";
+  if (context) {
+    try {
+      contextStr = ` ${JSON.stringify(context)}`;
+    } catch (err) {
+      contextStr = " [Context serialization failed]";
+    }
+  }
   return `[${timestamp}] [${level.toUpperCase()}] ${message}${contextStr}`;
 }
 

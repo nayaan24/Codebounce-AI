@@ -24,6 +24,54 @@ export interface StreamInfo {
 }
 
 /**
+ * Acquire an atomic lock for stream processing (prevents concurrent streams)
+ * Returns true if lock was acquired, false if already locked
+ */
+export async function acquireStreamLock(
+  appId: string,
+  timeoutSeconds: number = 300
+): Promise<boolean> {
+  const lockKey = `app:${appId}:stream-lock`;
+  // Use SET with NX (only set if not exists) and EX (expiration) for atomicity
+  // Returns "OK" if set successfully, null if key already exists
+  const result = await redisPublisher.set(lockKey, "locked", {
+    NX: true,
+    EX: timeoutSeconds,
+  });
+  return result !== null && result !== undefined;
+}
+
+/**
+ * Release the stream lock
+ */
+export async function releaseStreamLock(appId: string): Promise<void> {
+  const lockKey = `app:${appId}:stream-lock`;
+  await redisPublisher.del(lockKey);
+}
+
+/**
+ * Wait for stream lock to be available (with timeout)
+ * Returns true if lock became available, false if timeout
+ */
+export async function waitForStreamLock(
+  appId: string,
+  maxWaitSeconds: number = 10
+): Promise<boolean> {
+  const startTime = Date.now();
+  const maxWaitMs = maxWaitSeconds * 1000;
+  
+  while (Date.now() - startTime < maxWaitMs) {
+    const acquired = await acquireStreamLock(appId);
+    if (acquired) {
+      return true;
+    }
+    // Wait 200ms before retrying
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  return false;
+}
+
+/**
  * Get the current stream state for an app
  */
 export async function getStreamState(appId: string): Promise<StreamState> {
@@ -48,6 +96,8 @@ export async function stopStream(appId: string): Promise<void> {
     JSON.stringify({ type: "abort-stream" })
   );
   await redisPublisher.del(`app:${appId}:stream-state`);
+  // Release the lock when stream is stopped
+  await releaseStreamLock(appId);
 }
 
 /**
@@ -212,6 +262,8 @@ export async function handleStreamLifecycle(
     case "finish":
     case "error":
       await clearStreamState(appId);
+      // Release the lock when stream finishes or errors
+      await releaseStreamLock(appId);
       break;
   }
 }
