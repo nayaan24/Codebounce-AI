@@ -9,6 +9,7 @@ import { getUser } from "@/auth/stack-auth";
 import { appUsers } from "@/db/schema";
 import { db } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
+import { isProUser } from "@/lib/user-plan";
 
 // "fix" mastra mcp bug
 import { EventEmitter } from "events";
@@ -37,6 +38,17 @@ async function handlePOST(req: NextRequest) {
 
   // Require authentication
   const user = await getUser();
+  
+  // Check if user is on free plan - block chat for free users
+  const proUser = await isProUser();
+  if (!proUser) {
+    return NextResponse.json(
+      {
+        error: "Want to unlock your full potential? Upgrade to our pro and enjoy!",
+      },
+      { status: 403 }
+    );
+  }
   
   // Rate limiting: 20 requests per minute per user
   const identifier = getRateLimitIdentifier(req, user.userId);
@@ -158,27 +170,29 @@ async function handlePOST(req: NextRequest) {
     );
   }
 
-  // Request dev server with error handling
+  // Request dev server with queueing and rate limiting
   let mcpEphemeralUrl: string;
   let fs: any;
   try {
-    const devServer = await freestyle.requestDevServer({
-      repoId: app.info.gitRepo,
-    });
-    mcpEphemeralUrl = devServer.mcpEphemeralUrl;
+    const { requestDevServerWithQueue } = await import("@/lib/internal/dev-server-queue");
+    const devServer = await requestDevServerWithQueue(app.info.gitRepo, user.userId);
+    mcpEphemeralUrl = devServer.mcpEphemeralUrl || devServer.ephemeralUrl;
     fs = devServer.fs;
   } catch (error) {
     console.error("[Dev Server Error]", error);
     await ensureLockRelease();
+    const errorMessage = error instanceof Error ? error.message : "Failed to initialize development server";
     return NextResponse.json(
-      { error: "Failed to initialize development server. Please try again." },
-      { status: 503 }
+      { error: errorMessage },
+      { status: errorMessage.includes("Rate limit") ? 429 : 503 }
     );
   }
 
   // Create stream with error handling
   try {
-    const resumableStream = await sendMessageWithStreaming(
+    // Import wrapper instead of direct function
+    const { sendMessageWithStreamingWrapper } = await import("@/lib/premade-stream-wrapper");
+    const resumableStream = await sendMessageWithStreamingWrapper(
       builderAgent,
       appId,
       mcpEphemeralUrl,

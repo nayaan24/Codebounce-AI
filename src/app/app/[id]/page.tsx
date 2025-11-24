@@ -2,7 +2,6 @@
 
 import { getApp } from "@/actions/get-app";
 import AppWrapper from "../../../components/app-wrapper";
-import { freestyle } from "@/lib/freestyle";
 import { db } from "@/db/schema";
 import { appUsers } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -45,11 +44,13 @@ export default async function AppPage({
     resourceId: id,
   });
 
-  const { codeServerUrl, ephemeralUrl } = await freestyle.requestDevServer({
-    repoId: app?.info.gitRepo,
-  });
+  // For premade apps, all messages are already in memory, so just use them as-is
+  const currentChatState = await chatState(app.info.id);
+  const shouldResume = currentChatState.state === "running";
 
-  console.log("requested dev server");
+  // Don't block page load by waiting for dev server - let client-side handle it
+  // The WebView component will request the dev server when needed
+  // This allows the page to load immediately while dev server starts in background
 
   // Use the previewDomain from the database, or fall back to a generated domain
   const domain = app.info.previewDomain;
@@ -58,15 +59,15 @@ export default async function AppPage({
     <AppWrapper
       key={app.info.id}
       baseId={app.info.baseId}
-      codeServerUrl={codeServerUrl}
+      codeServerUrl={undefined}
       appName={app.info.name}
       initialMessages={uiMessages}
-      consoleUrl={ephemeralUrl + "/__console"}
+      consoleUrl={undefined}
       repo={app.info.gitRepo}
       appId={app.info.id}
       repoId={app.info.gitRepo}
       domain={domain ?? undefined}
-      running={(await chatState(app.info.id)).state === "running"}
+      running={shouldResume}
     />
   );
 }

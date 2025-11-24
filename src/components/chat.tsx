@@ -4,7 +4,7 @@ import Image from "next/image";
 
 import { PromptInputBasic } from "./chatinput";
 import { Markdown } from "./ui/markdown";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChatContainer } from "./ui/chat-container";
 import { UIMessage } from "ai";
 import { ToolMessage } from "./tools";
@@ -12,6 +12,8 @@ import { useQuery } from "@tanstack/react-query";
 import { chatState } from "@/actions/chat-streaming";
 import { CompressedImage } from "@/lib/image-compression";
 import { useChatSafe } from "./use-chat";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 export default function Chat(props: {
   appId: string;
@@ -29,18 +31,50 @@ export default function Chat(props: {
     refetchOnWindowFocus: true,
   });
 
+  const shouldResume = props.running && chat?.state === "running";
+  console.log("[Chat] Resume check:", { 
+    running: props.running, 
+    chatState: chat?.state, 
+    shouldResume,
+    appId: props.appId 
+  });
+
   const { messages, sendMessage } = useChatSafe({
     messages: props.initialMessages,
     id: props.appId,
-    resume: props.running && chat?.state === "running",
+    resume: shouldResume,
   });
 
   const [input, setInput] = useState("");
+  const [isProUser, setIsProUser] = useState<boolean | null>(null);
+  const router = useRouter();
+
+  // Check user plan
+  useEffect(() => {
+    const checkPlan = async () => {
+      try {
+        const response = await fetch("/api/test-plan");
+        const data = await response.json();
+        setIsProUser(data.plan === "pro");
+      } catch {
+        setIsProUser(false);
+      }
+    };
+    checkPlan();
+  }, []);
 
   const onSubmit = (e?: React.FormEvent<HTMLFormElement>) => {
     if (e?.preventDefault) {
       e.preventDefault();
     }
+    
+    // Block free users from sending messages
+    if (!isProUser) {
+      toast.error("Want to unlock your full potential? Upgrade to our pro and enjoy!");
+      router.push("/pricing");
+      return;
+    }
+    
     sendMessage(
       {
         parts: [
@@ -111,26 +145,53 @@ export default function Chat(props: {
       >
         <ChatContainer autoScroll>
           {messages
-            .filter((message: any, index: number, self: any[]) => 
+            .filter((message: any, index: number, self: any[]) => {
               // Remove duplicates by checking if this is the first occurrence of this ID
-              self.findIndex((m: any) => m.id === message.id) === index
-            )
+              const isFirst = self.findIndex((m: any) => m.id === message.id) === index;
+              
+              // Filter out any messages that look like premade prompt buttons
+              // (these shouldn't be in messages, but just in case)
+              if (message.role === "user") {
+                const text = message.parts?.[0]?.text || "";
+                if (text.includes("Make me a") || text.includes("Make me an")) {
+                  // This might be a premade prompt - check if it's actually a button/UI element
+                  return false;
+                }
+              }
+              
+              return isFirst;
+            })
             .map((message: any, index: number) => (
               <MessageBody key={`${message.id}-${index}`} message={message} />
             ))}
         </ChatContainer>
       </div>
       <div className="flex-shrink-0 p-3 transition-all bg-background md:backdrop-blur-sm">
-        <PromptInputBasic
-          stop={handleStop}
-          input={input}
-          onValueChange={(value) => {
-            setInput(value);
-          }}
-          onSubmit={onSubmit}
-          onSubmitWithImages={onSubmitWithImages}
-          isGenerating={props.isLoading || chat?.state === "running"}
-        />
+        {isProUser === false ? (
+          <div className="rounded-lg border border-border bg-card p-4 text-center">
+            <p className="text-sm text-muted-foreground mb-2">
+              Want to unlock your full potential? Upgrade to our pro and enjoy!
+            </p>
+            <button
+              onClick={() => router.push("/pricing")}
+              className="rounded-lg border border-border bg-primary text-primary-foreground px-4 py-2 text-sm font-normal transition-all duration-200 hover:bg-primary/90 hover:scale-105"
+            >
+              Upgrade to Pro
+            </button>
+          </div>
+        ) : (
+          <PromptInputBasic
+            stop={handleStop}
+            input={input}
+            onValueChange={(value) => {
+              setInput(value);
+            }}
+            onSubmit={onSubmit}
+            onSubmitWithImages={onSubmitWithImages}
+            isGenerating={props.isLoading || chat?.state === "running"}
+            disabled={isProUser === null || !isProUser}
+          />
+        )}
       </div>
     </div>
   );

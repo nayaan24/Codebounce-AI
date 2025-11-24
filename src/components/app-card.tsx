@@ -25,7 +25,9 @@ type AppCardProps = {
 export function AppCard({ id, name, createdAt, previewDomain, onDelete }: AppCardProps) {
   const router = useRouter();
   const [previewError, setPreviewError] = useState(false);
-  const { setProjectOpening, isAnyProjectOpening, openingProjectId } = useProjectOpening();
+  const { setProjectOpening, isAnyProjectOpening, openingProjectId, setProjectDeleting, isAnyProjectDeleting, deletingProjectId } = useProjectOpening();
+  
+  const isDeleting = deletingProjectId === id;
 
   const isThisCardOpening = openingProjectId === id;
 
@@ -61,12 +63,20 @@ export function AppCard({ id, name, createdAt, previewDomain, onDelete }: AppCar
     e.preventDefault();
     e.stopPropagation();
     
-    if (isAnyProjectOpening) return;
+    if (isAnyProjectOpening || isDeleting || isAnyProjectDeleting) return;
     
-    await deleteApp(id);
-    toast.success("App deleted successfully");
-    if (onDelete) {
-      onDelete();
+    setProjectDeleting(id);
+    try {
+      await deleteApp(id);
+      toast.success("App deleted successfully");
+      setProjectDeleting(null);
+      if (onDelete) {
+        onDelete();
+      }
+    } catch (error) {
+      console.error("Failed to delete app:", error);
+      toast.error("Failed to delete app. Please try again.");
+      setProjectDeleting(null);
     }
   };
 
@@ -85,7 +95,7 @@ export function AppCard({ id, name, createdAt, previewDomain, onDelete }: AppCar
     });
   };
 
-  const isDisabled = isAnyProjectOpening;
+  const isDisabled = isAnyProjectOpening || isAnyProjectDeleting;
 
   return (
     <div className="relative group">
@@ -99,7 +109,12 @@ export function AppCard({ id, name, createdAt, previewDomain, onDelete }: AppCar
       >
           {/* Preview Section */}
           <div className="h-40 bg-gray-800/50 relative overflow-hidden">
-            {isThisCardOpening ? (
+            {isDeleting ? (
+              <div className="w-full h-full flex flex-col items-center justify-center text-white px-4 text-center">
+                <Loader2 className="h-6 w-6 animate-spin mb-2" />
+                <div className="text-sm font-semibold">Deleting...</div>
+              </div>
+            ) : isThisCardOpening ? (
               <div className="w-full h-full flex flex-col items-center justify-center text-white px-4 text-center">
                 <Loader2 className="h-6 w-6 animate-spin mb-2" />
                 <div className="text-sm font-semibold">Opening...</div>
@@ -158,10 +173,20 @@ export function AppCard({ id, name, createdAt, previewDomain, onDelete }: AppCar
               <DropdownMenuSeparator className="bg-gray-700" />
               <DropdownMenuItem
                 onClick={handleDelete}
-                className="text-red-400 hover:bg-gray-800 focus:bg-gray-800"
+                disabled={isDeleting}
+                className="text-red-400 hover:bg-gray-800 focus:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Trash className="mr-2 h-4 w-4" />
-                Delete
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash className="mr-2 h-4 w-4" />
+                    Delete
+                  </>
+                )}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

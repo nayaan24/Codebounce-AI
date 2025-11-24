@@ -86,7 +86,7 @@ export function PromptInputBasic({
     <div className="relative w-full">
       {/* Image previews */}
       {images.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <div className="flex flex-wrap gap-2 mb-2 p-2 bg-secondary rounded-lg">
           {images.map((image, index) => (
             <div key={index} className="relative group">
               <Image
@@ -115,7 +115,7 @@ export function PromptInputBasic({
         onValueChange={(value) => onValueChange?.(value)}
         isLoading={isLoading || isCompressing}
         onSubmit={handleSubmitWithData}
-        className="w-full border dark:bg-accent shadow-sm rounded-lg border-gray-300focus-within:border-gray-400 focus-within:ring-1 transition-all duration-200 ease-in-out focus-within:ring-gray-200 border-gray-300"
+        className="w-full border border-input bg-background shadow-sm rounded-lg focus-within:border-primary focus-within:ring-1 transition-all duration-200 ease-in-out focus-within:ring-ring"
       >
         <PromptInputTextarea
           placeholder={

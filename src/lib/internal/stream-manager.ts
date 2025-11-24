@@ -76,6 +76,7 @@ export async function waitForStreamLock(
  */
 export async function getStreamState(appId: string): Promise<StreamState> {
   const state = await redisPublisher.get(`app:${appId}:stream-state`);
+  console.log(`[Stream State] Getting state for ${appId}:`, state);
   return { state };
 }
 
@@ -121,14 +122,19 @@ export async function waitForStreamToStop(
  * Clear the stream state for an app
  */
 export async function clearStreamState(appId: string): Promise<void> {
+  console.log(`[Stream State] clearStreamState called for ${appId}`);
   await redisPublisher.del(`app:${appId}:stream-state`);
+  const verify = await redisPublisher.get(`app:${appId}:stream-state`);
+  console.log(`[Stream State] clearStreamState verified for ${appId}:`, verify);
 }
 
 /**
  * Get an existing stream for an app
  */
 export async function getStream(appId: string): Promise<StreamInfo | null> {
+  console.log(`[Stream State] getStream called for ${appId}`);
   const hasStream = await streamContext.hasExistingStream(appId);
+  console.log(`[Stream State] hasExistingStream for ${appId}:`, hasStream);
   if (hasStream === true) {
     return {
       async readableStream() {
@@ -181,18 +187,25 @@ export async function setStream(
     );
   }
 
+  console.log(`[Stream State] Setting state to 'running' for ${appId}`);
+  // Set state with longer expiration for premade streams (they need time to be consumed)
   await redisPublisher.set(`app:${appId}:stream-state`, "running", {
-    EX: 15,
+    EX: 120, // 2 minutes - gives plenty of time for page to load and resume
   });
+  const verifyState = await redisPublisher.get(`app:${appId}:stream-state`);
+  console.log(`[Stream State] Verified state for ${appId}:`, verifyState);
 
+  console.log(`[Stream State] Creating resumable stream for ${appId}`);
   const resumableStream = await streamContext.createNewResumableStream(
     appId,
     () => {
+      console.log(`[Stream State] Resumable stream factory called for ${appId}`);
       return responseBody.pipeThrough(
         new TextDecoderStream()
       ) as ReadableStream<string>;
     }
   );
+  console.log(`[Stream State] Resumable stream created for ${appId}:`, !!resumableStream);
 
   if (!resumableStream) {
     console.error("Failed to create resumable stream");
@@ -243,9 +256,12 @@ export async function setupAbortCallback(
  * Update the keep-alive timestamp for a stream
  */
 export async function updateKeepAlive(appId: string): Promise<void> {
+  console.log(`[Stream State] updateKeepAlive called for ${appId}`);
   await redisPublisher.set(`app:${appId}:stream-state`, "running", {
-    EX: 15,
+    EX: 120, // 2 minutes - extended for premade streams
   });
+  const verify = await redisPublisher.get(`app:${appId}:stream-state`);
+  console.log(`[Stream State] updateKeepAlive verified for ${appId}:`, verify);
 }
 
 /**

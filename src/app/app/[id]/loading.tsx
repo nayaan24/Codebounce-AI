@@ -45,7 +45,7 @@ export default function Loading() {
   }, []);
 
   return (
-    <div className="flex flex-col justify-center items-center h-screen bg-black">
+    <div className="flex flex-col justify-center items-center h-screen bg-background">
       <div className="flex items-center justify-center mb-8">
         {letters.map((letter, index) => {
           const isLowercase = lowercaseIndices.has(index);
@@ -54,7 +54,7 @@ export default function Loading() {
           return (
             <span
               key={index}
-              className={`font-pixelated text-4xl sm:text-5xl md:text-6xl text-white logo-shadow-main lowercase-transition ${
+              className={`font-pixelated text-4xl sm:text-5xl md:text-6xl text-foreground logo-shadow-main lowercase-transition ${
                 isLowercase ? "settled" : ""
               }`}
             >

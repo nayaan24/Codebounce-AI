@@ -38,9 +38,12 @@ export async function GET(
     const currentStream = await getStream(appId);
 
     if (!currentStream) {
+      logger.debug("No stream found for appId", { appId });
       return new Response(null, { status: 404 });
     }
 
+    logger.debug("Resuming stream for appId", { appId });
+    console.log("[Stream Resume] Resuming stream for app:", appId);
     return currentStream?.response();
   } catch (error) {
     logger.error("Failed to get stream", error);

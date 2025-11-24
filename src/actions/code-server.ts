@@ -1,6 +1,7 @@
 "use server";
 
-import { freestyle } from "@/lib/freestyle";
+import { requestDevServerWithQueue } from "@/lib/internal/dev-server-queue";
+import { getUser } from "@/auth/stack-auth";
 
 export async function getCodeServerUrl({
   repoId,
@@ -8,9 +9,11 @@ export async function getCodeServerUrl({
   repoId: string;
   baseId: string;
 }): Promise<string> {
-  const { codeServerUrl } = await freestyle.requestDevServer({
-    repoId: repoId,
-  });
+  // Get user for rate limiting and queueing
+  const user = await getUser();
+  
+  // Use queue system with rate limiting
+  const { codeServerUrl } = await requestDevServerWithQueue(repoId, user.userId);
 
   return codeServerUrl;
 }

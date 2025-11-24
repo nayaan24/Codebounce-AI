@@ -40,9 +40,12 @@ export default async function NewAppRedirectPage({
     message = search.message;
   }
 
+  const isPremade = search.premade === "true";
+
   const { id } = await createApp({
     initialMessage: decodeURIComponent(message),
     templateId: search.template as string,
+    isPremade,
   });
 
   redirect(`/app/${id}`);

@@ -30,8 +30,8 @@ export default function AppWrapper({
   initialMessages: UIMessage[];
   repoId: string;
   baseId: string;
-  codeServerUrl: string;
-  consoleUrl: string;
+  codeServerUrl?: string;
+  consoleUrl?: string;
   domain?: string;
   running: boolean;
 }) {
